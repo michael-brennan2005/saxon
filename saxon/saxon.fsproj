@@ -6,7 +6,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="Program.fs"/>
+        <Compile Include="Tokenizer.fs" />
+        <Compile Include="Program.fs" />
+        
     </ItemGroup>
 
 </Project>
