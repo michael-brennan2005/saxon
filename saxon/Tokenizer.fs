@@ -21,16 +21,7 @@ type Token =
 let rec tokenizeNumber (currentNumber: char list) (str: char list) (toks: Token list) =
     match str with
     | char :: tail when Char.IsDigit(char) || char.Equals('.') -> tokenizeNumber (char :: currentNumber) tail toks
-    | [] ->
-        let number =
-            currentNumber
-            |> List.rev
-            |> Array.ofList
-            |> String.Concat
-            |> double
-            
-        (str, Number(number) :: toks)
-    | char :: tail when not (Char.IsDigit(char)) ->
+    | _ ->
         let number =
             currentNumber
             |> List.rev
@@ -43,23 +34,15 @@ let rec tokenizeNumber (currentNumber: char list) (str: char list) (toks: Token 
     
 let rec tokenizeIdentifier (currentIdentifier: char list) (str: char list) (toks : Token list) =
     match str with
-    | [] ->
+     | char :: tail when Char.IsLetter(char) -> tokenizeIdentifier (char :: currentIdentifier) tail toks
+     | _ ->
         let identifier =
             currentIdentifier
             |> List.rev
             |> Array.ofList
-            |> string
+            |> String.Concat
             
         (str, Identifier(identifier) :: toks)
-    | char :: tail when not (Char.IsLetter(char)) ->
-        let identifier =
-            currentIdentifier
-            |> List.rev
-            |> Array.ofList
-            |> string
-        
-        (str, Identifier(identifier) :: toks)
-    | char :: tail when Char.IsLetter(char) -> tokenizeIdentifier (char :: currentIdentifier) tail toks
 
 let rec tokenize (str: char list) (tokens: Token list) =
     match str with
