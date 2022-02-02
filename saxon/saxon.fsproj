@@ -8,7 +8,9 @@
     <ItemGroup>
         <Compile Include="Tokenizer.fs" />
         <Compile Include="Parser.fs" />
+        <Compile Include="Interpreter.fs" />
         <Compile Include="Program.fs" />
+        
     </ItemGroup>
 
 </Project>

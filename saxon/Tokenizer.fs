@@ -15,7 +15,7 @@ type Token =
     // Keywords
     | Let
     // Variable-length
-    | Number of double
+    | Number of float
     | Identifier of string
     
 let rec tokenizeNumber (currentNumber: char list) (str: char list) (toks: Token list) =
@@ -27,7 +27,7 @@ let rec tokenizeNumber (currentNumber: char list) (str: char list) (toks: Token 
             |> List.rev
             |> Array.ofList
             |> String.Concat
-            |> double
+            |> float
             
         (str, Number(number) :: toks)
     

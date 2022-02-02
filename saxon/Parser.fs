@@ -11,8 +11,8 @@ type Operator =
     | Exp
 
 type Node =
-    | Operation of Node * Operator * Node
-    | Number of double
+    | Operation of Operator * Node * Node
+    | Number of float
     | Null // todo: fix this when we actually want to implement error handling
 
 // assumes left paren was already consumed
@@ -37,26 +37,31 @@ let primary (tokens: Token list) =
         (expression insideTokens, remainingTokens)
     | _ -> (Node.Null, tokens)
 
-let rec exponent (tokens: Token list) =
-    let left, tokens = primary(tokens)
-    
+let rec exponentOrUnary (tokens: Token list) =
     match tokens with
-    | Token.Exp :: tail ->
-        let right, tokens = exponent(tail)
-        (Node.Operation(left, Operator.Exp, right), tokens)
+    | Token.Sub :: tail ->
+        let right, tokens = exponentOrUnary(tail)
+        (Node.Operation(Operator.Sub, Node.Number(0.0), right), tokens)
     | _ ->
-        (left, tokens)
- 
+        let left, tokens = primary(tokens)
+        
+        match tokens with
+        | Token.Exp :: tail ->
+            let right, tokens = exponentOrUnary(tail)
+            (Node.Operation(Operator.Exp, left, right), tokens)
+        | _ ->
+            (left, tokens)
+
 let rec product (tokens: Token list) =
-    let left, tokens = exponent(tokens)
+    let left, tokens = exponentOrUnary(tokens)
     
     match tokens with
     | Token.Mul :: tail ->
         let right, tokens = product(tail)
-        (Node.Operation(left, Operator.Mul, right), tokens)
+        (Node.Operation(Operator.Mul, left, right), tokens)
     | Token.Div :: tail ->
         let right, tokens = product(tail)
-        (Node.Operation(left, Operator.Div, right), tokens)
+        (Node.Operation(Operator.Div, left, right), tokens)
     | _ ->
         (left, tokens)
         
@@ -66,10 +71,10 @@ let rec sum (tokens: Token list) =
     match tokens with
     | Token.Add :: tail ->
         let right, tokens = sum(tail)
-        (Node.Operation(left, Operator.Add, right), tokens)
+        (Node.Operation(Operator.Add, left, right), tokens)
     | Token.Sub :: tail ->
         let right, tokens = sum(tail)
-        (Node.Operation(left, Operator.Sub, right), tokens)
+        (Node.Operation(Operator.Sub, left, right), tokens)
     | _ ->
         (left, tokens)
         
