@@ -11,7 +11,6 @@ while true do
     let input = Console.ReadLine()
     let result =
         tokenize (Seq.toList input) []
-        |> expression
-        |> walk
+        |> parse
     printfn $"{result}"
 

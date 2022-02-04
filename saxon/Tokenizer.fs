@@ -11,6 +11,7 @@ type Token =
     | Exp
     | LeftParen
     | RightParen
+    | Comma
     | Equals
     // Keywords
     | Let
@@ -55,6 +56,7 @@ let rec tokenize (str: char list) (tokens: Token list) =
     | '^' :: tail -> tokenize tail (Exp :: tokens)
     | '(' :: tail -> tokenize tail (LeftParen :: tokens)
     | ')' :: tail -> tokenize tail (RightParen :: tokens)
+    | ',' :: tail -> tokenize tail (Comma :: tokens)
     | '=' :: tail -> tokenize tail (Equals :: tokens)
     // Keywords
     | 'l' :: 'e' :: 't' :: char :: tail when not (Char.IsLetter(char)) -> tokenize (char :: tail) (Let :: tokens)

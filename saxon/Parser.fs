@@ -3,6 +3,39 @@ module rec saxon.Parser
 
 open saxon.Tokenizer
 
+(*
+Selectors
+
+insideParens: Returns the tokens inside parentheses, assumes left paren was already used up
+    
+Grammar
+parse ->
+    expression;
+    assignment;
+    
+assignment ->
+    "let" definition "=" expression;
+definition ->
+    IDENTIFIER;
+    
+expression -> 
+    sum;
+sum -> 
+    product;
+    product ("+" | "-") sum;
+product ->
+    exponentOrUnary;
+    exponentOrUnary ("*" | "/") product;
+exponentOrUnary ->
+    "-" exponentOrUnary;
+    primary "^" exponentOrUnary;
+    primary;
+primary ->
+    NUMBER;
+    IDENTIFIER;
+    "(" expression ")";
+*)
+
 type Operator =
     | Add
     | Sub
@@ -12,8 +45,12 @@ type Operator =
 
 type Node =
     | Operation of Operator * Node * Node
+    | Assignment of Node * Node
     | Number of float
+    | Identifier of string
     | Null // todo: fix this when we actually want to implement error handling
+
+// MARK: Selectors
 
 // assumes left paren was already consumed
 let rec insideParens (insideTokens: Token list) (remainingTokens: Token list) (lp: int) (rp: int) =
@@ -29,9 +66,17 @@ let rec insideParens (insideTokens: Token list) (remainingTokens: Token list) (l
     | token :: tail ->
         insideParens (token :: insideTokens) tail lp rp
       
+let rec splitAtEquals (leftTokens: Token list) (remainingTokens: Token list) =
+    match remainingTokens with
+    | Token.Equals :: tail -> (leftTokens |> List.rev, tail)
+    | token :: tail -> splitAtEquals (token :: leftTokens) tail
+    | _ -> (leftTokens, [])
+
+// MARK: Expression parsing
 let primary (tokens: Token list) =
     match tokens with
     | Token.Number(num) :: tail  -> (Node.Number(num), tail)
+    | Token.Identifier(name) :: tail -> (Node.Identifier(name), tail)
     | Token.LeftParen :: tail ->
         let (insideTokens, remainingTokens) = insideParens [] tail 1 0
         (expression insideTokens, remainingTokens)
@@ -78,6 +123,23 @@ let rec sum (tokens: Token list) =
     | _ ->
         (left, tokens)
         
-let rec expression (tokens: Token list) =
-    let result, _ = sum tokens
+let expression (tokens: Token list) =
+    let (result, _) = sum tokens
     result
+   
+// MARK: Assignment parsing
+let rec definition (tokens: Token list) =
+    match tokens with
+    | [Token.Identifier(name)] -> Node.Identifier(name)
+    | _ -> Node.Null
+   
+let assignment (tokens: Token list) =
+    let leftSide, rightSide = splitAtEquals [] tokens
+    
+    Node.Assignment(definition leftSide, expression rightSide)
+    
+// MARK: Main
+let parse (tokens: Token list) =
+    match tokens with
+    | Token.Let :: tail -> assignment tail
+    | _ -> expression tokens
