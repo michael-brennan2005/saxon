@@ -45,9 +45,9 @@ type Operator =
 
 type Node =
     | Operation of Operator * Node * Node
-    | Assignment of Node * Node
+    | VariableAssignment of Node * Node
     | Number of float
-    | Identifier of string
+    | VariableIdentifier of string
     | Null // todo: fix this when we actually want to implement error handling
 
 // MARK: Selectors
@@ -76,7 +76,7 @@ let rec splitAtEquals (leftTokens: Token list) (remainingTokens: Token list) =
 let primary (tokens: Token list) =
     match tokens with
     | Token.Number(num) :: tail  -> (Node.Number(num), tail)
-    | Token.Identifier(name) :: tail -> (Node.Identifier(name), tail)
+    | Token.Identifier(name) :: tail -> (Node.VariableIdentifier(name), tail)
     | Token.LeftParen :: tail ->
         let (insideTokens, remainingTokens) = insideParens [] tail 1 0
         (expression insideTokens, remainingTokens)
@@ -130,13 +130,13 @@ let expression (tokens: Token list) =
 // MARK: Assignment parsing
 let rec definition (tokens: Token list) =
     match tokens with
-    | [Token.Identifier(name)] -> Node.Identifier(name)
+    | [Token.Identifier(name)] -> Node.VariableIdentifier(name)
     | _ -> Node.Null
    
 let assignment (tokens: Token list) =
     let leftSide, rightSide = splitAtEquals [] tokens
     
-    Node.Assignment(definition leftSide, expression rightSide)
+    Node.VariableAssignment(definition leftSide, expression rightSide)
     
 // MARK: Main
 let parse (tokens: Token list) =
