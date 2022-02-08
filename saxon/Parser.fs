@@ -43,9 +43,19 @@ type Operator =
     | Div
     | Exp
 
+type VariableAssignmentInfo = {
+    name: string
+}
+
+type FunctionAssignmentInfo = {
+    name: string
+    arguments: string list 
+}
+
 type Node =
     | Operation of Operator * Node * Node
-    | VariableAssignment of Node * Node
+    | VariableAssignment of VariableAssignmentInfo * Node
+    | FunctionAssignment of FunctionAssignmentInfo * Node
     | Number of float
     | VariableIdentifier of string
     | Null // todo: fix this when we actually want to implement error handling
@@ -71,7 +81,7 @@ let rec splitAtEquals (leftTokens: Token list) (remainingTokens: Token list) =
     | Token.Equals :: tail -> (leftTokens |> List.rev, tail)
     | token :: tail -> splitAtEquals (token :: leftTokens) tail
     | _ -> (leftTokens, [])
-
+    
 // MARK: Expression parsing
 let primary (tokens: Token list) =
     match tokens with
@@ -124,22 +134,35 @@ let rec sum (tokens: Token list) =
         (left, tokens)
         
 let expression (tokens: Token list) =
-    let (result, _) = sum tokens
+    let result, _ = sum tokens
     result
    
 // MARK: Assignment parsing
-let rec definition (tokens: Token list) =
+let rec variableDefinition (tokens: Token list) =
     match tokens with
-    | [Token.Identifier(name)] -> Node.VariableIdentifier(name)
-    | _ -> Node.Null
+    | [Token.Identifier(name)] -> { VariableAssignmentInfo.name = name }
+    | _ -> { VariableAssignmentInfo.name = "nildef" }
    
-let assignment (tokens: Token list) =
+let rec functionDefinition (functionName: string) (argList: string list) (tokens: Token list) =
+    match tokens with
+    | Token.Identifier(functionName) :: Token.LeftParen :: tail -> functionDefinition functionName [] tail
+    | Token.Identifier(argName) :: tail -> functionDefinition functionName (argName :: argList) tail
+    | Token.Comma :: tail -> functionDefinition functionName argList tail
+    | _ -> { FunctionAssignmentInfo.arguments = argList; FunctionAssignmentInfo.name = functionName }
+    
+let variableAssignment (tokens: Token list) =
     let leftSide, rightSide = splitAtEquals [] tokens
     
-    Node.VariableAssignment(definition leftSide, expression rightSide)
+    Node.VariableAssignment(variableDefinition leftSide, expression rightSide)
     
+let functionAssignment (tokens: Token list) =
+    let leftSide, rightSide = splitAtEquals [] tokens
+    
+    Node.FunctionAssignment(functionDefinition "" [] leftSide, expression rightSide)
+   
 // MARK: Main
 let parse (tokens: Token list) =
     match tokens with
-    | Token.Let :: tail -> assignment tail
+    | Token.Let :: tail -> variableAssignment tail
+    | Token.LetF :: tail -> functionAssignment tail
     | _ -> expression tokens

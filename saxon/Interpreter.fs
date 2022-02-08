@@ -26,13 +26,8 @@ let rec walk (node: Node) (context: Context)  =
             (Math.Pow(lhsResult, rhsResult), context)
     | Node.VariableAssignment(identifier, expression) ->
         let result, context = walk expression context
-        
-        let identifierUnwrapped =
-            match identifier with
-            | Node.VariableIdentifier(name) -> name
-            | _ -> ""
             
-        (result, { context with variables = context.variables |> Map.add identifierUnwrapped (Node.Number(result)) })
+        (result, { context with variables = context.variables |> Map.add identifier.name (Node.Number(result)) })
     | Node.Number(num) ->
         (num, context)
     | Node.VariableIdentifier(name) ->

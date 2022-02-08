@@ -15,6 +15,7 @@ type Token =
     | Equals
     // Keywords
     | Let
+    | LetF
     // Variable-length
     | Number of float
     | Identifier of string
@@ -59,6 +60,7 @@ let rec tokenize (str: char list) (tokens: Token list) =
     | ',' :: tail -> tokenize tail (Comma :: tokens)
     | '=' :: tail -> tokenize tail (Equals :: tokens)
     // Keywords
+    | 'l' :: 'e' :: 't' :: 'f' :: char :: tail when not (Char.IsLetter(char)) -> tokenize (char :: tail) (LetF :: tokens)
     | 'l' :: 'e' :: 't' :: char :: tail when not (Char.IsLetter(char)) -> tokenize (char :: tail) (Let :: tokens)
     // Variable-length
     | char :: tail when Char.IsLetter(char) ->

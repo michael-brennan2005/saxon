@@ -17,8 +17,8 @@ while true do
  
     let s1 = tokenize (Seq.toList input) []
     let s2 = parse s1
-    let s3, newContext = walk s2 context
-    context <- newContext
+    (*let s3, newContext = walk s2 context
+    context <- newContext*)
     
-    printfn $"{s3}"
+    printfn $"{s2}"
 
