@@ -8,7 +8,8 @@ let x = Seq.toList "3.1 + 2.4 ^ 36.23 * 10^-5"
 let y = tokenize x []
 
 let mutable context = {
-    Context.variables = Map.empty;
+    Context.variables = Map.empty
+    Context.functions = Map.empty
 }
 
 while true do
@@ -16,8 +17,8 @@ while true do
  
     let s1 = tokenize (Seq.toList input) []
     let s2 = parse s1
-    (*let s3, newContext = walk s2 context
-    context <- newContext*)
+    let s3, newContext = walk s2 context
+    context <- newContext
     
-    printfn $"{s2}"
+    printfn $"{s3}"
 

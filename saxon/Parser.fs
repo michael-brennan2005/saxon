@@ -69,7 +69,7 @@ type Node =
     | VariableAssignment of VariableAssignmentInfo * Node
     | FunctionAssignment of FunctionAssignmentInfo * Node
     | Number of float
-    | VariableIdentifier of string
+    | VariableCall of string
     | FunctionCall of string * Node list // node list is arguments 
     | Null // todo: fix this when we actually want to implement error handling
 
@@ -116,7 +116,7 @@ let primary (tokens: Token list) =
         let insideTokens, remainingTokens = insideParens [] tail 1 0
         let arguments = functionCallArguments [] insideTokens
         (Node.FunctionCall(name, arguments), remainingTokens)
-    | Token.Identifier(name) :: tail -> (Node.VariableIdentifier(name), tail)
+    | Token.Identifier(name) :: tail -> (Node.VariableCall(name), tail)
     | Token.LeftParen :: tail ->
         let insideTokens, remainingTokens = insideParens [] tail 1 0
         (expression insideTokens, remainingTokens)
