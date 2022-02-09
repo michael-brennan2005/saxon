@@ -12,7 +12,6 @@ let mutable context = {
 }
 
 while true do
-   
     let input = Console.ReadLine()
  
     let s1 = tokenize (Seq.toList input) []

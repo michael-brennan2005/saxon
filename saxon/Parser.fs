@@ -11,13 +11,21 @@ insideParens: Returns the tokens inside parentheses, assumes left paren was alre
 Grammar
 parse ->
     expression;
-    assignment;
+    variableAssignment;
+    functionAssignment;
+
+variableAssignment ->
+    "let" variableDefinition "=" expression;
+variableDefinition ->
+    IDENTIFIER;  
     
-assignment ->
-    "let" definition "=" expression;
-definition ->
+functionAssignment ->
+    "let" functionDefinition "=" expression;
+functionDefinition ->
+    IDENTIFIER "(" functionDefinition;
     IDENTIFIER;
-    
+    "," IDENTIFIER;
+
 expression -> 
     sum;
 sum -> 
@@ -33,7 +41,11 @@ exponentOrUnary ->
 primary ->
     NUMBER;
     IDENTIFIER;
+    IDENTIFIER "(" functionCallArguments ")"
     "(" expression ")";
+    
+functionCallArguments ->
+    
 *)
 
 type Operator =
@@ -58,11 +70,11 @@ type Node =
     | FunctionAssignment of FunctionAssignmentInfo * Node
     | Number of float
     | VariableIdentifier of string
+    | FunctionCall of string * Node list // node list is arguments 
     | Null // todo: fix this when we actually want to implement error handling
 
 // MARK: Selectors
 
-// assumes left paren was already consumed
 let rec insideParens (insideTokens: Token list) (remainingTokens: Token list) (lp: int) (rp: int) =
     match remainingTokens with
     | Token.LeftParen :: tail ->
@@ -82,13 +94,31 @@ let rec splitAtEquals (leftTokens: Token list) (remainingTokens: Token list) =
     | token :: tail -> splitAtEquals (token :: leftTokens) tail
     | _ -> (leftTokens, [])
     
+let rec splitAtCommas (splitTokens: Token list list) (currentList: Token list) (remainingTokens: Token list) =
+    match remainingTokens with
+    | Token.Comma :: tail -> splitAtCommas ((currentList |> List.rev) :: splitTokens) [] tail
+    | token :: tail -> splitAtCommas splitTokens (token :: currentList) tail
+    | [] -> currentList :: splitTokens |> List.rev
+    
 // MARK: Expression parsing
+let rec functionCallArguments (arguments: Node list) (tokens: Token list) =
+    match tokens with
+    | [] -> arguments |> List.rev
+    | Token.Comma :: tail -> functionCallArguments arguments tail
+    | _ ->
+        let argument, remainingTokens = expressionWithTokens tokens
+        functionCallArguments (argument :: arguments) remainingTokens
+        
 let primary (tokens: Token list) =
     match tokens with
     | Token.Number(num) :: tail  -> (Node.Number(num), tail)
+    | Token.Identifier(name) :: Token.LeftParen :: tail ->
+        let insideTokens, remainingTokens = insideParens [] tail 1 0
+        let arguments = functionCallArguments [] insideTokens
+        (Node.FunctionCall(name, arguments), remainingTokens)
     | Token.Identifier(name) :: tail -> (Node.VariableIdentifier(name), tail)
     | Token.LeftParen :: tail ->
-        let (insideTokens, remainingTokens) = insideParens [] tail 1 0
+        let insideTokens, remainingTokens = insideParens [] tail 1 0
         (expression insideTokens, remainingTokens)
     | _ -> (Node.Null, tokens)
 
@@ -133,10 +163,14 @@ let rec sum (tokens: Token list) =
     | _ ->
         (left, tokens)
         
+let expressionWithTokens (tokens: Token list) =
+    sum tokens
+    
 let expression (tokens: Token list) =
     let result, _ = sum tokens
     result
    
+
 // MARK: Assignment parsing
 let rec variableDefinition (tokens: Token list) =
     match tokens with
@@ -148,7 +182,7 @@ let rec functionDefinition (functionName: string) (argList: string list) (tokens
     | Token.Identifier(functionName) :: Token.LeftParen :: tail -> functionDefinition functionName [] tail
     | Token.Identifier(argName) :: tail -> functionDefinition functionName (argName :: argList) tail
     | Token.Comma :: tail -> functionDefinition functionName argList tail
-    | _ -> { FunctionAssignmentInfo.arguments = argList; FunctionAssignmentInfo.name = functionName }
+    | _ -> { FunctionAssignmentInfo.arguments = argList |> List.rev; FunctionAssignmentInfo.name = functionName }
     
 let variableAssignment (tokens: Token list) =
     let leftSide, rightSide = splitAtEquals [] tokens
@@ -163,6 +197,6 @@ let functionAssignment (tokens: Token list) =
 // MARK: Main
 let parse (tokens: Token list) =
     match tokens with
+    | Token.Let :: Token.Identifier(name) :: Token.LeftParen ::  tail -> functionAssignment (Token.Identifier(name) :: Token.LeftParen :: tail)
     | Token.Let :: tail -> variableAssignment tail
-    | Token.LetF :: tail -> functionAssignment tail
     | _ -> expression tokens
