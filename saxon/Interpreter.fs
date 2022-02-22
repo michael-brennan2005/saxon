@@ -1,13 +1,18 @@
-﻿module saxon.Interpreter
+﻿module rec saxon.Interpreter
 
 open System
 open Microsoft.FSharp.Collections
 open saxon.Parser
+
 type Context = {
     variables: Map<string, Node>
-    functions: Map<string, FunctionAssignmentInfo * Node>
+    functions: Map<string, Function>
 }
 
+type Function =
+    | UserDefined of FunctionAssignmentInfo * Node
+    | BuiltinNumerical of FunctionAssignmentInfo * (Map<string, float> -> Context -> float * Context)
+    
 let rec mapZip (left: 'a list) (right: 'b list) (map: Map<'a, 'b>) =
     match (left, right) with
     | headLeft :: tailLeft, headRight :: tailRight -> mapZip tailLeft tailRight (map |> Map.add headLeft headRight)
@@ -31,7 +36,9 @@ let rec walk (node: Node) (context: Context)  =
     | Node.VariableAssignment(info, node) ->
         (0.0, { context with variables = context.variables |> Map.add info.name node })
     | Node.FunctionAssignment(info, node) ->
-        (0.0, { context with functions = context.functions |> Map.add info.name (info, node)})
+        (0.0, {
+        context with functions = context.functions.Add (info.name, Function.UserDefined(info, node)) 
+    })
     | Node.Number(value) ->
         (value, context)
     | Node.VariableCall(name) ->
@@ -39,10 +46,27 @@ let rec walk (node: Node) (context: Context)  =
         let result, context = walk node context
         (result, context)
     | Node.FunctionCall(name, arguments) ->
-        let assignmentInfo, node = (context.functions |> Map.find name)
-        let (formalToReal: Map<string, Node>) = mapZip assignmentInfo.arguments arguments Map.empty
-        let newContext = { context with variables = mapMerge formalToReal context.variables }
-        let result, _ = walk node newContext
-        (result, context)
+        let fn = (context.functions |> Map.find name)
+        match fn with
+            | Function.BuiltinNumerical(info, func) ->
+                let argumentsEvaluated =
+                    arguments
+                    |> List.map (fun arg ->
+                        let result, _ = walk arg context
+                        result)
+                let (formalToReal: Map<string, float>) =
+                    mapZip info.arguments argumentsEvaluated Map.empty
+                func formalToReal context
+            | Function.UserDefined(info, node) ->
+                let argumentsEvaluated =
+                    arguments
+                    |> List.map (fun arg ->
+                        let result, _ = walk arg context
+                        Node.Number(result))
+                let (formalToReal: Map<string, Node>) =
+                    mapZip info.arguments argumentsEvaluated Map.empty
+                let newContext = { context with variables = mapMerge formalToReal context.variables }
+                let result, _ = walk node newContext
+                (result, context)
     | Node.Null -> (nan, context)
     

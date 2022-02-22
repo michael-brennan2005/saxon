@@ -70,7 +70,7 @@ type Node =
     | FunctionAssignment of FunctionAssignmentInfo * Node
     | Number of float
     | VariableCall of string
-    | FunctionCall of string * Node list // node list is arguments 
+    | FunctionCall of string * Node list // node list is arguments
     | Null // todo: fix this when we actually want to implement error handling
 
 // MARK: Selectors

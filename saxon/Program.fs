@@ -3,13 +3,14 @@ open System
 open saxon.Parser
 open saxon.Tokenizer
 open saxon.Interpreter
+open saxon.Builtins
 
 let x = Seq.toList "3.1 + 2.4 ^ 36.23 * 10^-5"
 let y = tokenize x []
 
 let mutable context = {
-    Context.variables = Map.empty
-    Context.functions = Map.empty
+    Context.variables = builtinConstants
+    Context.functions = builtinNumerical
 }
 
 while true do
