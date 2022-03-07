@@ -12,6 +12,7 @@ type Context = {
 type Function =
     | UserDefined of FunctionAssignmentInfo * Node
     | BuiltinNumerical of FunctionAssignmentInfo * (Map<string, float> -> Context -> float * Context)
+    | BuiltInFunctional of FunctionAssignmentInfo * (string -> Map<string, float> -> Context -> float * Context)
     
 let rec mapZip (left: 'a list) (right: 'b list) (map: Map<'a, 'b>) =
     match (left, right) with
@@ -57,6 +58,20 @@ let rec walk (node: Node) (context: Context)  =
                 let (formalToReal: Map<string, float>) =
                     mapZip info.arguments argumentsEvaluated Map.empty
                 func formalToReal context
+            | Function.BuiltInFunctional(info, func) ->
+                let functionName =
+                    match arguments.Head with
+                    // IT IS NOT A VARIABLE CALL! Parser will say it is though, but we know its actually the name of a function.
+                    | Node.VariableCall(string) -> string
+                    | _ -> "err"
+                let argumentsEvaluated =
+                    arguments.Tail
+                    |> List.map (fun arg ->
+                        let result, _ = walk arg context
+                        result) 
+                let (formalToReal: Map<string, float>) =
+                    mapZip info.arguments.Tail argumentsEvaluated Map.empty
+                func functionName formalToReal context
             | Function.UserDefined(info, node) ->
                 let argumentsEvaluated =
                     arguments

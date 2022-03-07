@@ -10,7 +10,7 @@ let y = tokenize x []
 
 let mutable context = {
     Context.variables = builtinConstants
-    Context.functions = builtinNumerical
+    Context.functions = mapMerge builtinNumerical builtinFunctional
 }
 
 while true do
