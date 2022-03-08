@@ -35,8 +35,13 @@ let builtinNumerical =
                 FunctionAssignmentInfo.arguments = ["x"];
             }, builtinTan))
 
-let builtinTestingFunction (functionName: string) (map: Map<string, float>) (context: Context) =
-    printfn $"{functionName} and {map}"
+let builtinTestingFunction (functionContext: Function) (map: Map<string, float>) (context: Context) =
+    let node =
+        match functionContext with
+        | Function.UserDefined(info, node) -> node
+        | _ -> Node.Number(0.0)
+        
+    
     (0.0, context)
     
 // Functions that run over possible functional arguments
