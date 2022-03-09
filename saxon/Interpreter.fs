@@ -9,10 +9,16 @@ type Context = {
     functions: Map<string, Function>
 }
 
+let findVariable (context: Context) (name: string)  =
+    context.variables |> Map.find name
+    
+let findFunction (context: Context) (name: string) =
+    context.functions |> Map.find name
+    
 type Function =
     | UserDefined of FunctionAssignmentInfo * Node
-    | BuiltinNumerical of FunctionAssignmentInfo * (Map<string, float> -> Context -> float * Context)
-    | BuiltInFunctional of FunctionAssignmentInfo * (string -> Map<string, float> -> Context -> float * Context)
+    | BuiltinNumerical of FunctionAssignmentInfo * (Context -> float * Context)
+    | BuiltInFunctional of FunctionAssignmentInfo * (Function -> Context -> float * Context)
     
 let rec mapZip (left: 'a list) (right: 'b list) (map: Map<'a, 'b>) =
     match (left, right) with
@@ -22,17 +28,24 @@ let rec mapZip (left: 'a list) (right: 'b list) (map: Map<'a, 'b>) =
 let rec mapMerge (top: Map<'a, 'b>) (bottom: Map<'a, 'b>) =
     Map.fold (fun acc key value -> Map.add key value acc) bottom top
 
-let rec evalFunction (toEval: Function) (arguments: Node list) (context: Context) =
-    match toEval with
-    | Function.BuiltinNumerical(info, func) ->
-        let argumentsEvaluated =
+// Evaluates arguments and inserts them into the context.
+let rec evalArgumentsAndCreateNewContext (functionInfo: FunctionAssignmentInfo) (arguments: Node list) (context: Context) =
+    let argumentsEvaluated =
             arguments
             |> List.map (fun arg ->
                 let result, _ = walk arg context
-                result)
-        let (formalToReal: Map<string, float>) =
-            mapZip info.arguments argumentsEvaluated Map.empty
-        func formalToReal context
+                Node.Number(result))
+    let (formalToReal: Map<string, Node>) =
+            mapZip functionInfo.arguments argumentsEvaluated Map.empty
+    let newContext = { context with variables = mapMerge formalToReal context.variables }
+    newContext
+    
+// Evaluates the function.
+let rec evalFunction (toEval: Function) (arguments: Node list) (context: Context) =
+    match toEval with
+    | Function.BuiltinNumerical(info, func) ->
+        let newContext = evalArgumentsAndCreateNewContext info arguments context
+        func newContext
     | Function.BuiltInFunctional(info, func) ->
         let functionName =
             match arguments.Head with
@@ -40,28 +53,15 @@ let rec evalFunction (toEval: Function) (arguments: Node list) (context: Context
             | Node.VariableCall(string) -> string
             | _ -> "err"
         let functionContext = context.functions |> Map.find functionName
-       
-        let argumentsEvaluated =
-            arguments.Tail
-            |> List.map (fun arg ->
-                let result, _ = walk arg context
-                result) 
-        let (formalToReal: Map<string, float>) =
-            mapZip info.arguments.Tail argumentsEvaluated Map.empty
-        func functionContext formalToReal context
+        // Tail because the first argument is the function!
+        let newContext = evalArgumentsAndCreateNewContext {info with arguments = info.arguments.Tail} arguments.Tail context
+        func functionContext newContext
     | Function.UserDefined(info, node) ->
-        let argumentsEvaluated =
-            arguments
-            |> List.map (fun arg ->
-                let result, _ = walk arg context
-                Node.Number(result))
-        let (formalToReal: Map<string, Node>) =
-            mapZip info.arguments argumentsEvaluated Map.empty
-        let newContext = { context with variables = mapMerge formalToReal context.variables }
+        let newContext = evalArgumentsAndCreateNewContext info arguments context
         let result, _ = walk node newContext
         (result, context)
                 
-let rec walk (node: Node) (context: Context)  =
+let rec walk (node: Node) (context: Context) : float * Context =
     match node with
     | Node.Operation(op, left, right) ->
         let leftResult, context = walk left context
@@ -82,11 +82,11 @@ let rec walk (node: Node) (context: Context)  =
     | Node.Number(value) ->
         (value, context)
     | Node.VariableCall(name) ->
-        let node = context.variables |> Map.find name
+        let node = findVariable context name
         let result, context = walk node context
         (result, context)
     | Node.FunctionCall(name, arguments) ->
-        let fn = (context.functions |> Map.find name)
+        let fn = findFunction context name
         evalFunction fn arguments context
     | Node.Null -> (nan, context)
     

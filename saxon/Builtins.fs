@@ -10,14 +10,17 @@ let builtinConstants =
         .Add("e", Node.Number(2.71828182846))
         .Add("tau", Node.Number(6.283185307179586))
 
-let builtinSin (map: Map<string, float>) (context: Context) =
-    (sin(Map.find "x" map), context)
+let builtinSin (context: Context) =
+    let result, _ = walk (findVariable context "x") context 
+    (sin(result), context)
     
-let builtinCos (map: Map<string, float>) (context: Context) =
-    (cos(Map.find "x" map), context)
+let builtinCos (context: Context) =
+    let result, _ = walk (findVariable context "x") context
+    (cos(result), context)
     
-let builtinTan (map: Map<string, float>) (context: Context) =
-    (tan(Map.find "x" map), context)
+let builtinTan (context: Context) =
+    let result, _ = walk (findVariable context "x") context     
+    (tan(result), context)
     
 // Functions that run over purely numerical arguments.
 let builtinNumerical =
@@ -35,21 +38,24 @@ let builtinNumerical =
                 FunctionAssignmentInfo.arguments = ["x"];
             }, builtinTan))
 
-let builtinTestingFunction (functionContext: Function) (map: Map<string, float>) (context: Context) =
-    let node =
-        match functionContext with
-        | Function.UserDefined(info, node) -> node
-        | _ -> Node.Number(0.0)
-        
+let builtinDerive (functionContext: Function) (context: Context) =
+    // difference quotient calculation
+    let h = 0.0000001
+    let aPlusH =
+        match findVariable context "a" with
+        | Node.Number(x) -> x + h
+        | _ -> h
     
-    (0.0, context)
+    let ahR, _ = evalFunction functionContext [ Node.Number(aPlusH) ] context
+    let aR, _ = evalFunction functionContext [ findVariable context "a" ] context
+    ((ahR - aR) / h, context)
     
 // Functions that run over possible functional arguments
 // Needed because on builtinnumerical and userdefined the compiler does immediate evaluation
 let builtinFunctional =
     Map.empty
-        .Add("testingfunction", Function.BuiltInFunctional({
-            FunctionAssignmentInfo.name = "testingfunction";
-            FunctionAssignmentInfo.arguments = ["fx"; "a"; "b";];
-        }, builtinTestingFunction))
+        .Add("derive", Function.BuiltInFunctional({
+            FunctionAssignmentInfo.name = "test";
+            FunctionAssignmentInfo.arguments = ["fx"; "a";];
+        }, builtinDerive))
         
