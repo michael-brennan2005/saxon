@@ -1,5 +1,6 @@
 module saxon.Builtins
 
+open System
 open Microsoft.FSharp.Collections
 open saxon.Interpreter
 open saxon.Parser
@@ -40,11 +41,12 @@ let builtinNumerical =
 
 let builtinDerive (functionContext: Function) (context: Context) =
     // difference quotient calculation
-    let h = 0.0000001
+    let h = 0.000000001
     let aPlusH =
         match findVariable context "a" with
         | Node.Number(x) -> x + h
         | _ -> h
+    
     
     let ahR, _ = evalFunction functionContext [ Node.Number(aPlusH) ] context
     let aR, _ = evalFunction functionContext [ findVariable context "a" ] context
