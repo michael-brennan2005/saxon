@@ -23,6 +23,27 @@ let builtinTan (context: Context) =
     let result, _ = walk (findVariable context "x") context     
     (tan(result), context)
     
+let builtinArccos (context: Context) =
+    let result, _ = walk (findVariable context "x") context
+    (acos(result), context)
+    
+let builtinArcsin (context: Context) =
+    let result, _ = walk (findVariable context "x") context
+    (asin(result), context)
+
+let builtinArctan (context: Context) =
+    let result, _ = walk (findVariable context "x") context
+    (atan(result), context)
+    
+let builtinLn (context: Context) =
+    let result, _ = walk (findVariable context "x") context
+    (log(result), context)
+
+let builtinLog (context: Context) =
+    let x, _ = walk (findVariable context "x") context
+    let y, _ = walk (findVariable context "y") context    
+    (log(y) / log(x), context)
+    
 // Functions that run over purely numerical arguments.
 let builtinNumerical =
     Map.empty
@@ -38,6 +59,26 @@ let builtinNumerical =
                 FunctionAssignmentInfo.name = "tan";
                 FunctionAssignmentInfo.arguments = ["x"];
             }, builtinTan))
+        .Add("arccos", Function.BuiltinNumerical({
+                FunctionAssignmentInfo.name = "arccos";
+                FunctionAssignmentInfo.arguments = ["x"];
+            }, builtinArccos))
+        .Add("arcsin", Function.BuiltinNumerical({
+                FunctionAssignmentInfo.name = "arcsin";
+                FunctionAssignmentInfo.arguments = ["x"];
+            }, builtinArcsin))
+        .Add("arctan", Function.BuiltinNumerical({
+                FunctionAssignmentInfo.name = "arctan";
+                FunctionAssignmentInfo.arguments = ["x"];
+            }, builtinArctan))
+        .Add("ln", Function.BuiltinNumerical({
+                FunctionAssignmentInfo.name = "ln";
+                FunctionAssignmentInfo.arguments = ["x"];
+            }, builtinLn))
+        .Add("log", Function.BuiltinNumerical({
+                FunctionAssignmentInfo.name = "log";
+                FunctionAssignmentInfo.arguments = ["x"; "y";];
+            }, builtinLog))
 
 let builtinDerive (functionContext: Function) (context: Context) =
     // difference quotient calculation
@@ -51,7 +92,7 @@ let builtinDerive (functionContext: Function) (context: Context) =
     let ahR, _ = evalFunction functionContext [ Node.Number(aPlusH) ] context
     let aR, _ = evalFunction functionContext [ findVariable context "a" ] context
     ((ahR - aR) / h, context)
-    
+
 // Functions that run over possible functional arguments
 // Needed because on builtinnumerical and userdefined the compiler does immediate evaluation
 let builtinFunctional =
