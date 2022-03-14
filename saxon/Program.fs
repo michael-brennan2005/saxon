@@ -1,3 +1,5 @@
+module Saxon.Program
+
 open System
 
 open saxon.Parser
@@ -5,21 +7,23 @@ open saxon.Tokenizer
 open saxon.Interpreter
 open saxon.Builtins
 
-let x = Seq.toList "3.1 + 2.4 ^ 36.23 * 10^-5"
-let y = tokenize x []
 
-let mutable context = {
+let createContext = {
     Context.variables = builtinConstants
     Context.functions = mapMerge builtinNumerical builtinFunctional
 }
-
-while true do
-    let input = Console.ReadLine()
- 
+    
+let computeFromInput (context: Context) (input: string) =
     let s1 = tokenize (Seq.toList input) []
     let s2 = parse s1
-    let s3, newContext = walk s2 context
+    walk s2 context
+    
+let mutable context = createContext
+while true do
+    let input = Console.ReadLine()
+    
+    let result, newContext = computeFromInput context input 
     context <- newContext
     
-    printfn $"{s3}"
+    printfn $"{result}"
 
