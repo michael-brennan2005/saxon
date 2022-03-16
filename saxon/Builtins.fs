@@ -93,7 +93,7 @@ let builtinCbrt (context: Context) =
 let builtinRoot (context: Context) =
     let x, _ = walk (findVariable context "x") context
     let y, _ = walk (findVariable context "y") context
-    (x ** (1.0 / y), context)
+    (y ** (1.0 / x), context)
 
 // Functions that run over purely numerical arguments.
 let builtinNumerical =

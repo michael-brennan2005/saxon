@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AvaloniaProject">
+    <option name="projectPerEditor">
+      <map>
+        <entry key="saxon-ui/App.axaml" value="saxon-ui/saxon-ui.csproj" />
+        <entry key="saxon-ui/MainWindow.axaml" value="saxon-ui/saxon-ui.csproj" />
+      </map>
+    </option>
+  </component>
+</project>
