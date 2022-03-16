@@ -1,9 +1,7 @@
-namespace saxon_tests
+﻿namespace saxon_tests
 
-open System
 open NUnit.Framework
 open saxon.Wrapper
-
 
 [<TestFixture>]
 type TestClass () =
@@ -14,7 +12,7 @@ type TestClass () =
     let withinError (threshold: float) (a: float) (b: float) =
         abs(a - b) <= threshold
     
-    let acceptableError = withinError 0.000001
+    let acceptableError = withinError 0.0001
     
     [<Test>]
     member this.Arithmetic1() =
@@ -66,4 +64,33 @@ type TestClass () =
         let result = createWrapperAndRun "sqrt(576) + cbrt(1000) + root(4, 4096)"
         Assert.AreEqual(acceptableError result 42.0, true)
         
-       
+    [<Test>]
+    member this.UserVariables() =
+        let saxon: SaxonWrapper = SaxonWrapper()
+        saxon.runInput "let x = 3 * 12" |> ignore
+        saxon.runInput "let y = 4"  |> ignore
+        let result = saxon.runInput "x + y"
+        Assert.AreEqual(acceptableError result 40.0, true)
+        
+    [<Test>]
+    member this.UserFunctions() =
+        let saxon = SaxonWrapper()
+        saxon.runInput "let f(x) = x^2 + 2 * x - 3" |> ignore
+        let result = saxon.runInput "f(3)"
+        Assert.AreEqual(acceptableError result 12.0, true)
+        
+    [<Test>]
+    member this.DeriveAndIntegrate() =
+        let saxon = SaxonWrapper()
+        saxon.runInput "let h(x) = e^x + x^2" |> ignore
+        let result = saxon.runInput "derive(h, 2) + integrate(h, 0, 2)"
+        Assert.AreEqual(acceptableError result 20.4447788645, true)
+        
+    [<Test>]
+    member this.ProductAndSum() =
+        let saxon = SaxonWrapper()
+        saxon.runInput "let identity(x) = x" |> ignore
+        saxon.runInput "let factorial(x) = product(identity, 1, x)" |> ignore
+        saxon.runInput "let sumtorial(x) = sum(identity, 1, x)" |> ignore
+        let result = saxon.runInput "factorial(5) + sumtorial(10)"
+        Assert.AreEqual(acceptableError result 175.0, true)
