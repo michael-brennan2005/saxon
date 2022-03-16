@@ -42,15 +42,11 @@ primary ->
     NUMBER;
     IDENTIFIER;
     IDENTIFIER "(" functionCallArguments ")"
-    "(" expression ")";
-    
-functionCallArguments ->
-    
+    "(" expression ")";    
 *)
 
 type Operator =
     | Add
-    | Sub
     | Mul
     | Div
     | Exp
@@ -66,12 +62,12 @@ type FunctionAssignmentInfo = {
 
 type Node =
     | Operation of Operator * Node * Node
+    | Negate of Node
     | VariableAssignment of VariableAssignmentInfo * Node
     | FunctionAssignment of FunctionAssignmentInfo * Node
     | Number of float
     | VariableCall of string
     | FunctionCall of string * Node list // node list is arguments
-    | Null // todo: fix this when we actually want to implement error handling
 
 // MARK: Selectors
 
@@ -120,13 +116,13 @@ let primary (tokens: Token list) =
     | Token.LeftParen :: tail ->
         let insideTokens, remainingTokens = insideParens [] tail 1 0
         (expression insideTokens, remainingTokens)
-    | _ -> (Node.Null, tokens)
+    | _ -> (Node.Number(0.0), tokens)
 
 let rec exponentOrUnary (tokens: Token list) =
     match tokens with
     | Token.Sub :: tail ->
         let right, tokens = exponentOrUnary(tail)
-        (Node.Operation(Operator.Sub, Node.Number(0.0), right), tokens)
+        (Node.Negate(right), tokens)
     | _ ->
         let left, tokens = primary(tokens)
         
@@ -150,6 +146,16 @@ let rec product (tokens: Token list) =
     | _ ->
         (left, tokens)
         
+// Helper for sum
+let negate (node: Node) =
+    match node with
+    | Node.Operation(op, left, right) -> Node.Operation(op, Node.Negate(left), right)
+    | Node.Negate(node) -> node
+    | Node.Number(num) -> Node.Number(0.0 - num)
+    | Node.VariableCall(name) -> Node.Negate(Node.VariableCall(name))
+    | Node.FunctionCall(name, argList) -> Node.Negate(Node.FunctionCall(name, argList))
+    | _  -> Node.Number(0.0)
+    
 let rec sum (tokens: Token list) =
     let left, tokens = product(tokens)
     
@@ -159,7 +165,7 @@ let rec sum (tokens: Token list) =
         (Node.Operation(Operator.Add, left, right), tokens)
     | Token.Sub :: tail ->
         let right, tokens = sum(tail)
-        (Node.Operation(Operator.Sub, left, right), tokens)
+        (Node.Operation(Operator.Add, left, negate right), tokens)
     | _ ->
         (left, tokens)
         

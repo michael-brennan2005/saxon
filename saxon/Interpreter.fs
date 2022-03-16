@@ -69,10 +69,12 @@ let rec walk (node: Node) (context: Context) : float * Context =
         
         match op with
         | Add -> (leftResult + rightResult, context)
-        | Sub -> (leftResult - rightResult, context)
         | Mul -> (leftResult * rightResult, context)
         | Div -> (leftResult / rightResult, context)
         | Exp -> (Math.Pow(leftResult,rightResult), context)
+    | Node.Negate(node) ->
+        let result, context = walk node context
+        (0.0 - result, context)
     | Node.VariableAssignment(info, node) ->
         (0.0, { context with variables = context.variables |> Map.add info.name node })
     | Node.FunctionAssignment(info, node) ->
@@ -88,5 +90,4 @@ let rec walk (node: Node) (context: Context) : float * Context =
     | Node.FunctionCall(name, arguments) ->
         let fn = findFunction context name
         evalFunction fn arguments context
-    | Node.Null -> (nan, context)
     
