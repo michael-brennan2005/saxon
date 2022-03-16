@@ -2,8 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "saxon", "saxon\saxon.fsproj", "{2C0CA883-1459-43D1-8A1F-6FCFE7E16751}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "saxon-ui", "saxon-ui\saxon-ui.csproj", "{2BBE1870-2032-43CF-963F-7E49B2667C1E}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "saxon-tests", "saxon-tests\saxon-tests.fsproj", "{31EDAFA7-3ADD-44D0-A89C-5DA665594F47}"
 EndProject
 Global
@@ -16,10 +14,6 @@ Global
 		{2C0CA883-1459-43D1-8A1F-6FCFE7E16751}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C0CA883-1459-43D1-8A1F-6FCFE7E16751}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C0CA883-1459-43D1-8A1F-6FCFE7E16751}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2BBE1870-2032-43CF-963F-7E49B2667C1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2BBE1870-2032-43CF-963F-7E49B2667C1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2BBE1870-2032-43CF-963F-7E49B2667C1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2BBE1870-2032-43CF-963F-7E49B2667C1E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{31EDAFA7-3ADD-44D0-A89C-5DA665594F47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{31EDAFA7-3ADD-44D0-A89C-5DA665594F47}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{31EDAFA7-3ADD-44D0-A89C-5DA665594F47}.Release|Any CPU.ActiveCfg = Release|Any CPU
