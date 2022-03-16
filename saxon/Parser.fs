@@ -48,7 +48,6 @@ primary ->
 type Operator =
     | Add
     | Mul
-    | Div
     | Exp
 
 type VariableAssignmentInfo = {
@@ -62,6 +61,7 @@ type FunctionAssignmentInfo = {
 
 type Node =
     | Operation of Operator * Node * Node
+    | Inverse of Node
     | Negate of Node
     | VariableAssignment of VariableAssignmentInfo * Node
     | FunctionAssignment of FunctionAssignmentInfo * Node
@@ -133,6 +133,17 @@ let rec exponentOrUnary (tokens: Token list) =
         | _ ->
             (left, tokens)
 
+// Helper for product
+let inverse (node: Node) =
+    match node with
+    | Node.Operation(op, left, right) -> Node.Operation(op, Node.Inverse(left), right)
+    | Node.Negate(node) -> Node.Inverse(Node.Negate(node))
+    | Node.Inverse(node) -> node
+    | Node.Number(num) -> Node.Number(1.0 / num)
+    | Node.VariableCall(name) -> Node.Inverse(Node.VariableCall(name))
+    | Node.FunctionCall(name, argList) -> Node.Inverse(Node.FunctionCall(name, argList))
+    | _  -> Node.Number(0.0)
+    
 let rec product (tokens: Token list) =
     let left, tokens = exponentOrUnary(tokens)
     
@@ -142,7 +153,7 @@ let rec product (tokens: Token list) =
         (Node.Operation(Operator.Mul, left, right), tokens)
     | Token.Div :: tail ->
         let right, tokens = product(tail)
-        (Node.Operation(Operator.Div, left, right), tokens)
+        (Node.Operation(Operator.Mul, left, inverse right), tokens)
     | _ ->
         (left, tokens)
         
@@ -151,6 +162,7 @@ let negate (node: Node) =
     match node with
     | Node.Operation(op, left, right) -> Node.Operation(op, Node.Negate(left), right)
     | Node.Negate(node) -> node
+    | Node.Inverse(node) -> Node.Negate(Node.Inverse(node))
     | Node.Number(num) -> Node.Number(0.0 - num)
     | Node.VariableCall(name) -> Node.Negate(Node.VariableCall(name))
     | Node.FunctionCall(name, argList) -> Node.Negate(Node.FunctionCall(name, argList))

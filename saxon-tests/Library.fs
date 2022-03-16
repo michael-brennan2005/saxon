@@ -1,4 +1,4 @@
-﻿namespace saxon_tests
+namespace saxon_tests
 
 open System
 open NUnit.Framework
@@ -25,6 +25,11 @@ type TestClass () =
     member this.Arithmetic2() =
         let result = createWrapperAndRun "(430.123 - 299.12) ^ 3.14159 + 27 * -2"
         Assert.AreEqual(acceptableError result 4483574.0201296667, true)
+        
+    [<Test>]
+    member this.DivisionTest() =
+        let result = createWrapperAndRun "2 / 4 * 2"
+        Assert.AreEqual(acceptableError result 1, true)
         
     [<Test>]
     member this.Constants() =

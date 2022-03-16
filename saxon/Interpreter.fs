@@ -70,8 +70,10 @@ let rec walk (node: Node) (context: Context) : float * Context =
         match op with
         | Add -> (leftResult + rightResult, context)
         | Mul -> (leftResult * rightResult, context)
-        | Div -> (leftResult / rightResult, context)
         | Exp -> (Math.Pow(leftResult,rightResult), context)
+    | Node.Inverse(node) ->
+        let result, context = walk node context
+        (1.0 / result, context)
     | Node.Negate(node) ->
         let result, context = walk node context
         (0.0 - result, context)
