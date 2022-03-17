@@ -10,8 +10,8 @@
         <Compile Include="Parser.fs" />
         <Compile Include="Interpreter.fs" />
         <Compile Include="Builtins.fs" />
-        <Compile Include="Program.fs" />
         <Compile Include="Wrapper.fs" />
+        <Compile Include="Program.fs" />
     </ItemGroup>
 
 </Project>
