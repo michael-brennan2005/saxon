@@ -5,14 +5,10 @@ open saxon.Parser
 open saxon.Tokenizer
 open saxon.Interpreter
 open saxon.Builtins
-
-let createContext = {
-    Context.variables = builtinConstants
-    Context.functions = mapMerge builtinNumerical builtinFunctional
-}
    
 type SaxonWrapper() =
     let mutable context = {
+        Context.message = None
         Context.variables = builtinConstants
         Context.functions = mapMerge builtinNumerical builtinFunctional
     }
@@ -22,4 +18,11 @@ type SaxonWrapper() =
         let s2 = parse s1
         let s3, newContext = walk s2 context
         context <- newContext
-        s3
+        
+        match context.message with
+        | Some(string) ->
+            context <- {context with message = None }
+            string
+        | _ ->
+             $"{s3}"
+       

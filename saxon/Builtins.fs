@@ -4,6 +4,40 @@ open Microsoft.FSharp.Collections
 open saxon.Interpreter
 open saxon.Parser
 
+let rec printTree_ (string: string option) (node: Node)  =
+    let printTree (node_: Node) = printTree_ None node_
+    
+    let rec printArgs (args: Node list) =
+        match args with
+        | arg :: [] -> $"{printTree arg}"
+        | arg :: tail -> $"{printTree arg},{printArgs tail}"
+        | _ -> ""
+    
+    match node with
+    | Node.Operation(op, left, right) ->
+        match op with
+        | Operator.Add ->
+            match right with
+            | Node.Negate(negateNode) -> $"({printTree left}) - {printTree negateNode}"
+            | _ -> $"({printTree left}) + {printTree right}"
+        | Operator.Mul ->
+            match right with
+            | Node.Inverse(inverseNode) -> $"{printTree left} / {printTree inverseNode}"
+            | _ -> $"{printTree left} * {printTree right}"
+        | Operator.Exp -> $"{printTree left} ^ {printTree right}"
+    | Node.Inverse(node) -> $"1 / {printTree node}"
+    | Node.Negate(node) -> $"1 - {printTree node}"
+    | Node.Number(float) -> $"{float}"
+    | Node.VariableCall(string) -> $"{string}"
+    | Node.FunctionCall(string, args) -> $"{string}({printArgs args})"
+    | _ -> ""
+
+// i am running out of names.
+let printFunction (functionC: Function) = 
+    match functionC with
+    | Function.UserDefined(functionAssignmentInfo, node) -> printTree_ None node
+    | _ -> ""
+    
 let builtinConstants =
     Map.empty
         .Add("pi",  Node.Number(3.14159265359))
@@ -180,7 +214,10 @@ let builtinNumerical =
                 FunctionAssignmentInfo.arguments = ["x"; "y";];
             }, builtinRoot))
 
-let builtinDerive (functionArg: Function) (context: Context) =
+let rec symbolicDerive (functionArg: Node) (context: Context) =
+    (0.0, context)
+    
+let numericallyDerive (functionArg: Function) (context: Context) =
     // difference quotient calculation
     let h = 0.000000001
     let aPlusH =
@@ -192,7 +229,11 @@ let builtinDerive (functionArg: Function) (context: Context) =
     let ahR, _ = evalFunction functionArg [ Node.Number(aPlusH) ] context
     let aR, _ = evalFunction functionArg [ findVariable context "a" ] context
     ((ahR - aR) / h, context)
-
+    
+let builtinDerive (functionArg: Function) (context: Context) =
+    let context = { context with message = Some (printFunction functionArg) }
+    (0.0, context)
+    
 let rec simpsons (functionArg: Function) (context: Context) (amount: float) (a: float) (b: float) (n: int) (step: int) =
     let h = (b - a) / float n
     

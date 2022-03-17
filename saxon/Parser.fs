@@ -61,8 +61,15 @@ type FunctionAssignmentInfo = {
 
 type Node =
     | Operation of Operator * Node * Node
+    (*
+        Parentheses, invert, and negate are used to avoid the hinge problem.
+        Invert is used for division, think 1/x.
+        Negate is used for subtraction, think +(-x).
+        Parentheses is used to avoid weird issues for expressions in parentheses due to the invert and negate nodes.
+    *)
+    | Parentheses of Node
     | Inverse of Node
-    | Negate of Node
+    | Negate of Node 
     | VariableAssignment of VariableAssignmentInfo * Node
     | FunctionAssignment of FunctionAssignmentInfo * Node
     | Number of float
@@ -115,7 +122,7 @@ let primary (tokens: Token list) =
     | Token.Identifier(name) :: tail -> (Node.VariableCall(name), tail)
     | Token.LeftParen :: tail ->
         let insideTokens, remainingTokens = insideParens [] tail 1 0
-        (expression insideTokens, remainingTokens)
+        (Node.Parentheses(expression insideTokens), remainingTokens)
     | _ -> (Node.Number(0.0), tokens)
 
 let rec exponentOrUnary (tokens: Token list) =
@@ -137,12 +144,8 @@ let rec exponentOrUnary (tokens: Token list) =
 let inverse (node: Node) =
     match node with
     | Node.Operation(op, left, right) -> Node.Operation(op, Node.Inverse(left), right)
-    | Node.Negate(node) -> Node.Inverse(Node.Negate(node))
     | Node.Inverse(node) -> node
-    | Node.Number(num) -> Node.Number(1.0 / num)
-    | Node.VariableCall(name) -> Node.Inverse(Node.VariableCall(name))
-    | Node.FunctionCall(name, argList) -> Node.Inverse(Node.FunctionCall(name, argList))
-    | _  -> Node.Number(0.0)
+    | _  -> Node.Inverse(node)
     
 let rec product (tokens: Token list) =
     let left, tokens = exponentOrUnary(tokens)
@@ -162,11 +165,7 @@ let negate (node: Node) =
     match node with
     | Node.Operation(op, left, right) -> Node.Operation(op, Node.Negate(left), right)
     | Node.Negate(node) -> node
-    | Node.Inverse(node) -> Node.Negate(Node.Inverse(node))
-    | Node.Number(num) -> Node.Number(0.0 - num)
-    | Node.VariableCall(name) -> Node.Negate(Node.VariableCall(name))
-    | Node.FunctionCall(name, argList) -> Node.Negate(Node.FunctionCall(name, argList))
-    | _  -> Node.Number(0.0)
+    | _ -> Node.Negate(node)
     
 let rec sum (tokens: Token list) =
     let left, tokens = product(tokens)

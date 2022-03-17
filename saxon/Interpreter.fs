@@ -3,10 +3,11 @@
 open System
 open Microsoft.FSharp.Collections
 open saxon.Parser
-
+    
 type Context = {
     variables: Map<string, Node>
     functions: Map<string, Function>
+    message: string option
 }
 
 let findVariable (context: Context) (name: string)  =
@@ -60,7 +61,7 @@ let rec evalFunction (toEval: Function) (arguments: Node list) (context: Context
         let newContext = evalArgumentsAndCreateNewContext info arguments context
         let result, _ = walk node newContext
         (result, context)
-                
+               
 let rec walk (node: Node) (context: Context) : float * Context =
     match node with
     | Node.Operation(op, left, right) ->
@@ -71,6 +72,8 @@ let rec walk (node: Node) (context: Context) : float * Context =
         | Add -> (leftResult + rightResult, context)
         | Mul -> (leftResult * rightResult, context)
         | Exp -> (Math.Pow(leftResult,rightResult), context)
+    | Node.Parentheses(node) ->
+        walk node context
     | Node.Inverse(node) ->
         let result, context = walk node context
         (1.0 / result, context)
