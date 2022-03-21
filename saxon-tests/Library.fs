@@ -80,11 +80,11 @@ type TestClass () =
         Assert.AreEqual(acceptableError (float result) 12.0, true)
         
     [<Test>]
-    member this.DeriveAndIntegrate() =
+    member this.Integrate() =
         let saxon = SaxonWrapper()
-        saxon.runInput "let h(x) = e^x + x^2" |> ignore
-        let result = saxon.runInput "derive(h, 2) + integrate(h, 0, 2)"
-        Assert.AreEqual(acceptableError (float result) 20.4447788645, true)
+        saxon.runInput "let h(x) = x" |> ignore
+        let result = saxon.runInput "integrate(h, 0, 2)"
+        Assert.AreEqual(acceptableError (float result) 2.0, true)
         
     [<Test>]
     member this.ProductAndSum() =

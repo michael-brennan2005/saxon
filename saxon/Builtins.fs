@@ -4,9 +4,8 @@ open Microsoft.FSharp.Collections
 open saxon.Interpreter
 open saxon.Parser
 
-let rec printTree_ (string: string option) (node: Node)  =
-    let printTree (node_: Node) = printTree_ None node_
-    
+let rec printTree (node: Node)  =
+   
     let rec printArgs (args: Node list) =
         match args with
         | arg :: [] -> $"{printTree arg}"
@@ -30,12 +29,13 @@ let rec printTree_ (string: string option) (node: Node)  =
     | Node.Number(float) -> $"{float}"
     | Node.VariableCall(string) -> $"{string}"
     | Node.FunctionCall(string, args) -> $"{string}({printArgs args})"
+    | Node.Parentheses(node) -> $"({printTree node})"
     | _ -> ""
 
 // i am running out of names.
 let printFunction (functionC: Function) = 
     match functionC with
-    | Function.UserDefined(functionAssignmentInfo, node) -> printTree_ None node
+    | Function.UserDefined(_, node) -> printTree node
     | _ -> ""
     
 let builtinConstants =
@@ -214,10 +214,82 @@ let builtinNumerical =
                 FunctionAssignmentInfo.arguments = ["x"; "y";];
             }, builtinRoot))
 
-let rec symbolicDerive (functionArg: Node) (context: Context) =
-    (0.0, context)
+let rec symbolicDifferentiate (respectTo: string) (node: Node) =
+    let diff = symbolicDifferentiate respectTo
+    match node with
+    | Node.Operation(op, left, right) ->
+        match op with
+        // Sum rule
+        | Operator.Add ->
+            Node.Operation(Operator.Add, diff left, diff right)
+        | Operator.Mul ->
+            // Constant rule
+            match (left, right) with
+            | Node.Number(num), _ -> Node.Operation(Operator.Mul, Node.Number(num), diff right)
+            | _, Node.Number(num) -> Node.Operation(Operator.Mul, diff left, Node.Number(num))
+            | _, _ ->
+                // Product rule
+                Node.Operation(Operator.Add,
+                               Node.Operation(Operator.Mul, diff left, right),
+                               Node.Operation(Operator.Mul, left, diff right))
+        | Operator.Exp ->
+           // Power rule
+           match (left, right) with
+           | _, Node.Number(num) ->
+               Node.Operation(
+                   Operator.Mul,
+                   Node.Number(num),
+                   Node.Operation(
+                       Operator.Mul,
+                       Node.Operation(
+                           Operator.Exp,
+                           left,
+                           Node.Operation(Operator.Add, right, Node.Number(-1.0))),
+                       diff left
+                   ))
+           // Exp rule
+           | Node.Number(num), _ ->
+               Node.Operation(
+                   Operator.Mul,
+                   Node.FunctionCall("ln", [Node.Number(num)]),
+                   Node.Operation(
+                       Operator.Mul,
+                       Node.Operation(
+                           Operator.Exp,
+                           left,
+                           right),
+                       diff right))
+            | Node.VariableCall(var), _ ->
+                // All vars are numbers
+                 Node.Operation(
+                   Operator.Mul,
+                   Node.FunctionCall("ln", [Node.VariableCall(var)]),
+                   Node.Operation(
+                       Operator.Mul,
+                       Node.Operation(
+                           Operator.Exp,
+                           left,
+                           right),
+                       diff right))
+            | _, _ -> Node.Number(0.0) // Not supported
+    | Node.Inverse(inv) ->
+        // Quotient rule 1 / a (u / v)
+        Node.Operation(Operator.Mul,
+                       Node.Negate(Node.Operation(Operator.Mul, Node.Number(1.0), diff inv)),
+                       Node.Inverse(Node.Operation(Operator.Mul, inv, inv)))
+    | Node.Negate(neg) -> Node.Negate(diff neg)
+    | Node.Number _ -> Node.Number(0.0)
+    | Node.VariableCall(var) ->
+        if var = respectTo then
+            Node.Number(1.0)
+        else
+            // If its not the variable being differentiated with respect to, then it must some other user-defined variable. All user-defined variables are constants, therefore d/dx = 0.
+            Node.Number(0.0)
+    | Node.FunctionCall(func, _) ->
+        Node.VariableCall($"d{func}/d{respectTo}")
+    | _ -> Node.Number(0.0) // Not supported
     
-let numericallyDerive (functionArg: Function) (context: Context) =
+let numericallyDifferentiate (functionArg: Function) (context: Context) =
     // difference quotient calculation
     let h = 0.000000001
     let aPlusH =
@@ -225,14 +297,17 @@ let numericallyDerive (functionArg: Function) (context: Context) =
         | Node.Number(x) -> x + h
         | _ -> h
     
-    
     let ahR, _ = evalFunction functionArg [ Node.Number(aPlusH) ] context
     let aR, _ = evalFunction functionArg [ findVariable context "a" ] context
     ((ahR - aR) / h, context)
     
-let builtinDerive (functionArg: Function) (context: Context) =
-    let context = { context with message = Some (printFunction functionArg) }
-    (0.0, context)
+let builtinDifferentiate (functionArg: Function) (context: Context) =
+    match functionArg with
+    | Function.UserDefined(info, node) ->
+        let diff = symbolicDifferentiate info.arguments[0] node
+        let context = { context with message = Some (printTree diff) }
+        (0.0, context)
+    | _ -> (0.0, context)
     
 let rec simpsons (functionArg: Function) (context: Context) (amount: float) (a: float) (b: float) (n: int) (step: int) =
     let h = (b - a) / float n
@@ -283,10 +358,10 @@ let builtinProduct (functionArg: Function) (context: Context) =
 // Needed because on builtinnumerical and userdefined the compiler does immediate evaluation
 let builtinFunctional =
     Map.empty
-        .Add("derive", Function.BuiltInFunctional({
-            FunctionAssignmentInfo.name = "derive";
-            FunctionAssignmentInfo.arguments = ["fx"; "a";];
-        }, builtinDerive))
+        .Add("differentiate", Function.BuiltInFunctional({
+            FunctionAssignmentInfo.name = "differentiate";
+            FunctionAssignmentInfo.arguments = ["fx";];
+        }, builtinDifferentiate))
         .Add("integrate", Function.BuiltInFunctional({
             FunctionAssignmentInfo.name = "integrate"
             FunctionAssignmentInfo.arguments = ["fx"; "a"; "b";];
