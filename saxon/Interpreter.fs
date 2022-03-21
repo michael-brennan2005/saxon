@@ -82,10 +82,10 @@ let rec walk (node: Node) (context: Context) : float * Context =
         let result, context = walk node context
         (0.0 - result, context)
     | Node.VariableAssignment(info, node) ->
-        (0.0, { context with variables = context.variables |> Map.add info.name node })
+        (0.0, { context with variables = context.variables |> Map.add info.name node; message = Some "Variable successfully created." })
     | Node.FunctionAssignment(info, node) ->
         (0.0, {
-        context with functions = context.functions.Add (info.name, Function.UserDefined(info, node)) 
+        context with functions = context.functions.Add (info.name, Function.UserDefined(info, node)); message = Some "Function successfully created."
     })
     | Node.Number(value) ->
         (value, context)
