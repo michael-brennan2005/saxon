@@ -1,4 +1,5 @@
-﻿module saxon.Tokenizer
+﻿// String input -> List of tokens.
+module saxon.Tokenizer
 
 open System
 

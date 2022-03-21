@@ -1,4 +1,4 @@
-﻿// "rec"-ing namespace is a code smell. but who cares
+﻿// List of tokens -> AST.
 module rec saxon.Parser
 
 open saxon.Tokenizer

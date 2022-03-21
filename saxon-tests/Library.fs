@@ -1,4 +1,5 @@
-﻿namespace saxon_tests
+﻿// Tests for saxon.
+namespace saxon_tests
 
 open NUnit.Framework
 open saxon.Wrapper

@@ -1,3 +1,4 @@
+// Interface for saxon. Wraps all the passes into a nice interface.
 module saxon.Wrapper
 
 (* For use with saxon-ui and saxon-tests. THE BOUNDARY. *)

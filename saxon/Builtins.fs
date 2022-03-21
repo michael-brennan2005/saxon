@@ -1,3 +1,4 @@
+// All builtin functions, things like logarithmic and trigonometric functions. Also calculus functions, like differentiation.
 module saxon.Builtins
 
 open Microsoft.FSharp.Collections
@@ -32,7 +33,6 @@ let rec printTree (node: Node)  =
     | Node.Parentheses(node) -> $"({printTree node})"
     | _ -> ""
 
-// i am running out of names.
 let printFunction (functionC: Function) = 
     match functionC with
     | Function.UserDefined(_, node) -> printTree node
