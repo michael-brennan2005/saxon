@@ -6,7 +6,6 @@ open saxon.Interpreter
 open saxon.Parser
 
 let rec printTree (node: Node)  =
-   
     let rec printArgs (args: Node list) =
         match args with
         | arg :: [] -> $"{printTree arg}"
@@ -129,6 +128,22 @@ let builtinRoot (context: Context) =
     let y, _ = walk (findVariable context "y") context
     (y ** (1.0 / x), context)
 
+let builtinPrintFunctions (context: Context) =
+    let message =
+        ("Available functions:\n", seq (Map.keys context.functions))
+        ||> Seq.fold (fun acc char -> $"{acc}{char}\n")
+    (0.0, { context with message = Some $"{message}" })
+    
+let builtinPrintVariables (context: Context) =
+    let evalVariable (var: string) =
+        let x, _ = walk (findVariable context var) context
+        x
+        
+    let message =
+        ("Available variables\n", seq (Map.keys context.variables))
+        ||> Seq.fold (fun acc var -> $"{acc}{var} -> {evalVariable var}\n")
+    (0.0, { context with message = Some $"{message}" })
+    
 // Functions that run over purely numerical arguments.
 let builtinNumerical =
     Map.empty
@@ -214,6 +229,16 @@ let builtinNumerical =
                 FunctionAssignmentInfo.arguments = ["x"; "y";];
             }, builtinRoot))
 
+        // UTILITY
+        .Add("variables", Function.BuiltinNumerical({
+                FunctionAssignmentInfo.name = "variables"
+                FunctionAssignmentInfo.arguments = [];
+            }, builtinPrintVariables))
+        .Add("functions", Function.BuiltinNumerical({
+                FunctionAssignmentInfo.name = "functions"
+                FunctionAssignmentInfo.arguments = [];
+            }, builtinPrintFunctions))
+        
 let rec symbolicDifferentiate (respectTo: string) (node: Node) =
     let diff = symbolicDifferentiate respectTo
     match node with
@@ -374,4 +399,5 @@ let builtinFunctional =
             FunctionAssignmentInfo.name = "product"
             FunctionAssignmentInfo.arguments = ["fx"; "a"; "b";];
         }, builtinProduct))
+       
         
