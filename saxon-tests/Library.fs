@@ -36,7 +36,7 @@ type TestClass () =
         Assert.AreEqual(acceptableError (float result) 53.65673260, true)
         
     [<Test>]
-    member this.TrigFunctions() =
+    member this.TrigFunctions1() =
         let result = createWrapperAndRun "sin(pi/2) + cos(pi/4) + tan(pi/8)"
         Assert.AreEqual(acceptableError (float result) 2.121320344, true)
         
